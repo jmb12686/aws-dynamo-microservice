@@ -5,7 +5,7 @@ const TABLE_NAME = process.env.TABLE_NAME || '';
 const RESERVED_RESPONSE = `Error: You're using AWS reserved keywords as attributes`;
 const DYNAMODB_EXECUTION_ERROR = `Error: Execution update, caused a Dynamodb error, please take a look at your CloudWatch Logs.`;
 
-exports.handler = async function(event, context){
+exports.handler = async function (event, context) {
 
   if (!event.body) {
     return { statusCode: 400, body: 'invalid request, you are missing the parameter body' };
@@ -21,8 +21,9 @@ exports.handler = async function(event, context){
     await db.put(params).promise();
     return { statusCode: 201, body: '' };
   } catch (dbError) {
+    console.error('createOrder ERROR: ', dbError);
     const errorResponse = dbError.code === 'ValidationException' && dbError.message.includes('reserved keyword') ?
-    DYNAMODB_EXECUTION_ERROR : RESERVED_RESPONSE;
+      DYNAMODB_EXECUTION_ERROR : RESERVED_RESPONSE;
     return { statusCode: 500, body: errorResponse };
   }
 };

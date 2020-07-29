@@ -52,7 +52,27 @@ export class AwsDynamoMicroserviceStack extends cdk.Stack {
       }
     });
 
+    const getOneOrder = new Function(this, 'getOneOrderFunction', {
+      code: new AssetCode("app/src"),
+      handler: 'getOneOrder.handler',
+      runtime: Runtime.NODEJS_12_X,
+      environment: {
+        TABLE_NAME: table.tableName
+      }
+    });
+
+    const getAllOrders = new Function(this, 'getAllOrdersFunction', {
+      code: new AssetCode('app/src'),
+      handler: 'getAllOrders.handler',
+      runtime: Runtime.NODEJS_12_X,
+      environment: {
+        TABLE_NAME: table.tableName
+      }
+    });
+
     table.grantReadWriteData(createOrder);
+    table.grantReadWriteData(getOneOrder);
+    table.grantReadWriteData(getAllOrders);
 
 
     const api = new RestApi(this, 'OrdersAPI', {
@@ -61,11 +81,19 @@ export class AwsDynamoMicroserviceStack extends cdk.Stack {
    
     const orders = api.root.addResource('orders');
 
+    //add getAll
+    const getAllOrdersIntegration = new LambdaIntegration(getAllOrders);
+    orders.addMethod('GET',getAllOrdersIntegration);
+    //add create
     const createOrderIntegration = new LambdaIntegration(createOrder);
     orders.addMethod('POST', createOrderIntegration);
     addCorsOptions(orders)
 
-
+    //add getOne
+    const singleItem = orders.addResource('{customerId}').addResource('{orderId}');
+    const getOneOrderIntegration = new LambdaIntegration(getOneOrder);
+    singleItem.addMethod('GET',getOneOrderIntegration);
+    addCorsOptions(singleItem);
 
   }
 }
